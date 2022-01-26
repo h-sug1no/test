@@ -86,8 +86,10 @@
 
         data.forEach((v, idx) => {
           const x = (clientWidth / data.length) * idx;
-          c2d.fillStyle = `hsl(${360/10*i}, 80%, 60%)`;
-          c2d.fillRect(x, y, 1 , v * hRow);
+          if (!(idx % 100)) {
+            c2d.fillStyle = `hsl(${360/10*i}, 80%, 60%)`;
+            c2d.fillRect(x, y, 1 , v * hRow);
+          }
           if (Math.abs(v) > 1) {
             console.log(idx, v);
           }
