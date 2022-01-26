@@ -1,19 +1,28 @@
 <!DOCTYPE html>
 
 <html>
-  <head>
-    <style>
-      canvas.audioView {
-        width: 80%;
-        height: 80%;
-        border: solid gray 1px;
-      }
-    </style>
-    <script src="main.js"></script>
-  </head>
-  <body>
+
+<head>
+  <style>
+    canvas.audioView {
+      width: 80vw;
+      height: 80vh;
+      border: solid gray 1px;
+    }
+    div.log {
+      white-space: pre;
+    }
+  </style>
+  <script src="main.js"></script>
+</head>
+
+<body>
+  <canvas class='audioView'></canvas>
+  <div>
     <a href="javascript:window.AUDIOVIEW.play()">play</a>
     <a href="javascript:window.AUDIOVIEW.stop()">stop</a>
-    <canvas class='audioView'/>
-  </body>
+  </div>
+  <div class="log"></div>
+</body>
+
 </html>

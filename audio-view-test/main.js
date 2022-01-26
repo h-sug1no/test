@@ -1,9 +1,13 @@
 (() => {
+
+  const sps = new URLSearchParams(location.search);
+  const audioSrcUrl = sps.get('audio');
   const actx = new AudioContext();
   let buffer;
   let c2d;
   let c2dElm;
-  
+  let logElm;
+
   const render = (timestamp=0) => {
     if (!c2d) {
       const elm = document.querySelector('canvas.audioView');
@@ -12,6 +16,10 @@
         c2dElm = elm;
       }
     }
+    if (!logElm) {
+      logElm = document.querySelector('div.log');
+    }
+
 
     let dirty;
     const {clientWidth, clientHeight} = c2dElm;
@@ -22,6 +30,19 @@
       dirty = true;
     }
 
+    if (logElm) {
+      const texts = [];
+      if (audioSrcUrl) {
+        texts.push(audioSrcUrl);
+        if (!buffer) {
+          texts.push('loading...');
+        }
+      }
+      if (dirty) {
+        texts.push('rendering...');
+      }
+      logElm.textContent = texts.join('\n');
+    }
 
     if (dirty && c2d) {
       c2d.clearRect(0, 0, clientWidth, clientHeight)
@@ -49,9 +70,7 @@
     requestAnimationFrame(render);
   }
 
-  const sps = new URLSearchParams(location.search);
-
-  fetch(sps.get('audio')).then(res => res.arrayBuffer())
+  fetch(audioSrcUrl).then(res => res.arrayBuffer())
     .then(data => actx.decodeAudioData(data))
     .then(buf => {
       buffer = buf;
