@@ -37,8 +37,8 @@
       n = 2 - n;
       const d = 60 / bpm;
       while (n > 0) {
-        const f = (this.tickNo % 4) ? 600 : 800;
-        this.pushTick(startSec + (this.tickNo * d), f);
+        const f = this.tickNo % 4 ? 600 : 800;
+        this.pushTick(startSec + this.tickNo * d, f);
         n -= 1;
         this.tickNo += 1;
       }
@@ -54,13 +54,19 @@
       },
     },
     pushTick(startSec, freq) {
-      const {adsr} = this;
+      const { adsr } = this;
       const osc = actx.createOscillator();
       osc.frequency.value = freq;
       const gainNode = actx.createGain();
       gainNode.gain.value = 1;
-      gainNode.gain.exponentialRampToValueAtTime(adsr.a.v, startSec + adsr.a.sec);
-      gainNode.gain.exponentialRampToValueAtTime(adsr.d.v, startSec + adsr.d.sec);
+      gainNode.gain.exponentialRampToValueAtTime(
+        adsr.a.v,
+        startSec + adsr.a.sec
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        adsr.d.v,
+        startSec + adsr.d.sec
+      );
       gainNode.connect(actx.destination);
       osc.connect(gainNode);
       this.ticks[startSec] = osc;
@@ -72,8 +78,44 @@
     },
   };
 
+  const ui = {
+    elmsMap: undefined,
+    render() {
+      const cs = ["play", "stop"];
+      if (!this.elmsMap) {
+        cs.forEach((c) => {
+          const elms = document.querySelectorAll(`div.uiContainer button.${c}`);
+          if (elms.length) {
+            this.elmsMap = this.elmsMap || {};
+            this.elmsMap[c] = elms;
+          }
+        });
+      }
+      const { elmsMap } = this;
+      if (!elmsMap) {
+        return;
+      }
+
+      cs.forEach((c) => {
+        elmsMap[c].forEach((v) => {
+          switch (c) {
+            case "play":
+              v.disabled = !!activeSource;
+              break;
+            case "stop":
+              v.disabled = !activeSource;
+              break;
+            default:
+              break;
+          }
+        });
+      });
+    },
+  };
+
   const render = (timestamp = 0) => {
     ticker.render();
+    ui.render();
     if (!c2d) {
       const elm = document.querySelector("canvas.audioView");
       if (elm) {

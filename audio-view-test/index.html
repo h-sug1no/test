@@ -18,10 +18,10 @@
 
 <body>
   <canvas class='audioView'></canvas>
-  <div>
-    <a href="javascript:window.AUDIOVIEW.play()">play</a>
-    <a href="javascript:window.AUDIOVIEW.play(true)">play(skip silence)</a>
-    <a href="javascript:window.AUDIOVIEW.stop()">stop</a>
+  <div class="uiContainer">
+    <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
+    <button class="play skipSilence" onclick="window.AUDIOVIEW.play(true)">play(skip silence)</button>
+    <button class="stop" onclick="window.AUDIOVIEW.stop()">stop</button>
   </div>
   <div class="log">loading...</div>
 </body>
