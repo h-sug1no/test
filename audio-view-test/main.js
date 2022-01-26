@@ -41,6 +41,14 @@
       if (dirty) {
         texts.push('rendering...');
       }
+
+      if (buffer) {
+        texts.push(`audioBuffer: numberOfChannels=${buffer.numberOfChannels}, duration=${buffer.duration}`);
+        for (let i = 0; i < buffer.numberOfChannels; i += 1) {
+          const data = buffer.getChannelData(i);
+          texts.push(`data[${i}]: length=${data.length}`);
+        }
+      }
       logElm.textContent = texts.join('\n');
     }
 
