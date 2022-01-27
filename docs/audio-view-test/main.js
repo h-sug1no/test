@@ -188,26 +188,7 @@
       logElm.textContent = texts.join("\n");
     }
 
-    if (c2d) {
-      c2d.clearRect(0, 0, clientWidth, 50);
-      if (buffer && actx && activeSource) {
-        c2d.fillStyle = "black";
-        const x =
-          clientWidth *
-          ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
-            buffer.duration);
-        c2d.textAlign = x / clientWidth > 0.5 ? "end" : "start";
-        c2d.fillText(
-          `${(actx.currentTime - activeSource.startTime).toFixed(
-            3
-          )} / ${buffer.duration.toFixed(3)}`,
-          x,
-          15
-        );
-        c2d.fillRect(x, 20, 1, 30);
-      }
-    }
-
+    const markerBoxHeight = 50;
     if (dirty && c2d && buffer) {
       c2d.clearRect(0, 0, clientWidth, clientHeight);
       // c2d.globalCompositeOperation = 'xor';
@@ -218,10 +199,11 @@
       }
       const sampleSec = buffer.duration / dataLength;
       silences = [];
+      const contentBoxHeight = clientHeight - markerBoxHeight;
       for (let i = 0; i < buffer.numberOfChannels; i += 1) {
-        const row = clientHeight * (1 / buffer.numberOfChannels);
+        const row = contentBoxHeight * (1 / buffer.numberOfChannels);
         const hRow = row * 0.5;
-        const y = row * i + hRow;
+        const y = markerBoxHeight + (row * i + hRow);
         c2d.fillRect(0, y, clientWidth, 1);
         const data = buffer.getChannelData(i);
 
@@ -255,6 +237,25 @@
             }
           }
         });
+      }
+    }
+    if (c2d) {
+      c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
+      if (buffer && actx && activeSource) {
+        c2d.fillStyle = "black";
+        const x =
+          clientWidth *
+          ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
+            buffer.duration);
+        c2d.textAlign = x / clientWidth > 0.5 ? "end" : "start";
+        c2d.fillText(
+          `${(actx.currentTime - activeSource.startTime).toFixed(
+            3
+          )} / ${buffer.duration.toFixed(3)}`,
+          x,
+          15
+        );
+        c2d.fillRect(x, 20, 1, 30);
       }
     }
     requestAnimationFrame(render);
