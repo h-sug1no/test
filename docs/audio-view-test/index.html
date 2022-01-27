@@ -20,11 +20,18 @@
 
     div.uiContainer {
       display: none;
-      line-height: 2em;
+      line-height: 2.5rem;
+    }
+
+    div.uiContainer button,
+    div.uiContainer div.tickerContainer * {
+      font-family: sans-serif;
+      font-size: 1em;
+      padding: 5px;
     }
 
     div.uiContainer input.bpm {
-      width: 5ch;
+      width: 7ch;
     }
 
     div.log {
@@ -41,7 +48,7 @@
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
     <button class="play skipSilence" onclick="window.AUDIOVIEW.play(true)">play(skip silence)</button>
     <button class="stop" onclick="window.AUDIOVIEW.stop()">stop</button>
-    <div>
+    <div class="tickerContainer">
       <input type="checkbox" class="ticker" id="ticker" name="ticker" checked>
       <label for="ticker">ticker: bpm=</label>
       <input type="number" class="bpm" id="bpm" name="bpm" min="1"></input>
