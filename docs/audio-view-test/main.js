@@ -200,9 +200,9 @@
       const sampleSec = buffer.duration / dataLength;
       silences = [];
       for (let i = 0; i < buffer.numberOfChannels; i += 1) {
-        const row = clientHeight * (1 / (buffer.numberOfChannels + 1));
-        const y = row * (i + 1);
+        const row = clientHeight * (1 / buffer.numberOfChannels);
         const hRow = row * 0.5;
+        const y = (row * i) + (hRow);
         c2d.fillRect(0, y, clientWidth, 1);
         const data = buffer.getChannelData(i);
 
