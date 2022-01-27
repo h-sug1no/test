@@ -36,7 +36,7 @@
       }
       let n = Object.keys(ticks).length;
       n = 2 - n;
-      const d = 60 / Number(bpmRef.value);
+      const d = 60 / (Number(bpmRef.value) || 1);
       while (n > 0) {
         const f = this.tickNo % 4 ? 600 : 800;
         this.pushTick(startSec + this.tickNo * d, f);
