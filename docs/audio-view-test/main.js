@@ -249,8 +249,8 @@
                 v,
                 sec: sampleSec * idx,
               };
-              c2d.fillStyle = "black";
-              c2d.fillRect(x, y, 1, hRow);
+              c2d.fillStyle = "rgba(0,0,0,0.4)";
+              c2d.fillRect(0, y - (hRow * 0.5), x, hRow);
             }
           }
         });
