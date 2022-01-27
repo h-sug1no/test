@@ -15,7 +15,7 @@
     startSec: 0,
     tickNo: 0,
     bpmRef: 120,
-    start(startSec, bpmRef = {value: 120}) {
+    start(startSec, bpmRef = { value: 120 }) {
       this.startSec = startSec;
       this.bpmRef = bpmRef;
       this.tickNo = 0;
@@ -93,9 +93,7 @@
         });
         if (this.elmsMap) {
           ["ticker", "bpm"].forEach((c) => {
-            this.elmsMap[c] = document.querySelector(
-              `div.uiContainer .${c}`
-            );
+            this.elmsMap[c] = document.querySelector(`div.uiContainer .${c}`);
           });
           const { bpm: bpmElm } = this.elmsMap;
           if (bpmElm) {
@@ -123,15 +121,15 @@
         });
       });
 
-      elmsMap.ticker.disabled = (activeSource && !ticker.startSec);
+      elmsMap.ticker.disabled = activeSource && !ticker.startSec;
     },
     enabled(c) {
-      return (ui.elmsMap && ui.elmsMap[c] && ui.elmsMap[c].checked);
-    }
+      return ui.elmsMap && ui.elmsMap[c] && ui.elmsMap[c].checked;
+    },
   };
 
   const render = (timestamp = 0) => {
-    if (ui.enabled('ticker')) {
+    if (ui.enabled("ticker")) {
       ticker.render();
     }
     ui.render();
@@ -192,18 +190,21 @@
 
     if (c2d) {
       c2d.clearRect(0, 0, clientWidth, 50);
-      c2d.fillStyle = "black";
-      c2d.fillText(activeSource ? "playing" : "", 0, 20);
       if (buffer && actx && activeSource) {
-        c2d.fillRect(
+        c2d.fillStyle = "black";
+        const x =
           clientWidth *
-            ((activeSource.offset +
-              (actx.currentTime - activeSource.startTime)) /
-              buffer.duration),
-          20,
-          1,
-          30
+          ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
+            buffer.duration);
+        c2d.textAlign = x / clientWidth > 0.5 ? "end" : "start";
+        c2d.fillText(
+          `${(actx.currentTime - activeSource.startTime).toFixed(
+            3
+          )} / ${buffer.duration.toFixed(3)}`,
+          x,
+          15
         );
+        c2d.fillRect(x, 20, 1, 30);
       }
     }
 
@@ -250,7 +251,7 @@
                 sec: sampleSec * idx,
               };
               c2d.fillStyle = "rgba(0,0,0,0.4)";
-              c2d.fillRect(0, y - (hRow * 0.5), x, hRow);
+              c2d.fillRect(0, y - hRow * 0.5, x, hRow);
             }
           }
         });
@@ -315,7 +316,7 @@
       };
 
       source.start(activeSource.startTime, offset);
-      if (ui.enabled('ticker')) {
+      if (ui.enabled("ticker")) {
         ticker.start(activeSource.startTime, ui.elmsMap.bpm);
       }
     },

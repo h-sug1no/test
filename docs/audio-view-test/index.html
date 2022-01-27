@@ -11,6 +11,7 @@
       height: 60vh;
       border: solid gray 1px;
     }
+
     body.ready div.uiContainer {
       display: block;
     }
@@ -46,7 +47,7 @@
 <body>
   <canvas class='audioView'></canvas>
   <div class="uiContainer">
-    <hr/>
+    <hr />
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
     <button class="play skipSilence" onclick="window.AUDIOVIEW.play(true)">play(skip silence)</button>
     <button class="stop" onclick="window.AUDIOVIEW.stop()">stop</button>
@@ -55,7 +56,7 @@
       <label for="ticker">ticker: bpm=</label>
       <input type="number" class="bpm" id="bpm" name="bpm" min="1"></input>
     </div>
-    <hr/>
+    <hr />
   </div>
   <div class="log">loading...</div>
 </body>
