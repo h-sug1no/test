@@ -14,10 +14,10 @@
     ticks: {},
     startSec: 0,
     tickNo: 0,
-    bpm: 120,
-    start(startSec, bpm = 120) {
+    bpmRef: 120,
+    start(startSec, bpmRef = {value: 120}) {
       this.startSec = startSec;
-      this.bpm = bpm;
+      this.bpmRef = bpmRef;
       this.tickNo = 0;
       this.render();
     },
@@ -30,13 +30,13 @@
       this.ticks = {};
     },
     render() {
-      const { ticks, startSec, bpm } = this;
+      const { ticks, startSec, bpmRef } = this;
       if (!startSec) {
         return;
       }
       let n = Object.keys(ticks).length;
       n = 2 - n;
-      const d = 60 / bpm;
+      const d = 60 / Number(bpmRef.value);
       while (n > 0) {
         const f = this.tickNo % 4 ? 600 : 800;
         this.pushTick(startSec + this.tickNo * d, f);
@@ -91,6 +91,17 @@
             this.elmsMap[c] = elms;
           }
         });
+        if (this.elmsMap) {
+          ["ticker", "bpm"].forEach((c) => {
+            this.elmsMap[c] = document.querySelector(
+              `div.uiContainer .${c}`
+            );
+          });
+          const { bpm: bpmElm } = this.elmsMap;
+          if (bpmElm) {
+            bpmElm.value = sps.get("bpm") || 120;
+          }
+        }
       }
       const { elmsMap } = this;
       if (!elmsMap) {
@@ -111,11 +122,18 @@
           }
         });
       });
+
+      elmsMap.ticker.disabled = (activeSource && !ticker.startSec);
     },
+    enabled(c) {
+      return (ui.elmsMap && ui.elmsMap[c] && ui.elmsMap[c].checked);
+    }
   };
 
   const render = (timestamp = 0) => {
-    ticker.render();
+    if (ui.enabled('ticker')) {
+      ticker.render();
+    }
     ui.render();
     if (!c2d) {
       const elm = document.querySelector("canvas.audioView");
@@ -145,7 +163,7 @@
           texts.push(`audio=${audioSrcUrl}`);
         }
         const url = new URL(location);
-        url.search = 'audio=audioFileUrl';
+        url.search = "audio=audioFileUrl";
         texts.push(`usage: ${url.toString()}[&bpm=number]`);
       } else {
         if (audioSrcUrl) {
@@ -202,7 +220,7 @@
       for (let i = 0; i < buffer.numberOfChannels; i += 1) {
         const row = clientHeight * (1 / buffer.numberOfChannels);
         const hRow = row * 0.5;
-        const y = (row * i) + (hRow);
+        const y = row * i + hRow;
         c2d.fillRect(0, y, clientWidth, 1);
         const data = buffer.getChannelData(i);
 
@@ -251,16 +269,14 @@
               .decodeAudioData(data)
               .then((buf) => {
                 buffer = buf;
-                document.body.classList.add('ready');
+                document.body.classList.add("ready");
                 return buffer;
               })
               .catch((e) => Promise.reject(e))
           )
           .catch((e) => Promise.reject(e));
       } else {
-        return Promise.reject(
-          Error(`${res.status}: ${res.statusText}`)
-        );
+        return Promise.reject(Error(`${res.status}: ${res.statusText}`));
       }
     })
     .catch((e) => {
@@ -299,7 +315,9 @@
       };
 
       source.start(activeSource.startTime, offset);
-      ticker.start(activeSource.startTime);
+      if (ui.enabled('ticker')) {
+        ticker.start(activeSource.startTime, ui.elmsMap.bpm);
+      }
     },
     stop() {
       if (source) {
@@ -310,5 +328,4 @@
   };
 
   render();
-
 })();

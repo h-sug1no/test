@@ -6,7 +6,7 @@
   <style>
     body.ready canvas.audioView {
       width: 80vw;
-      height: 80vh;
+      height: 60vh;
       border: solid gray 1px;
     }
     body.ready div.uiContainer {
@@ -20,6 +20,11 @@
 
     div.uiContainer {
       display: none;
+      line-height: 2em;
+    }
+
+    div.uiContainer input.bpm {
+      width: 5ch;
     }
 
     div.log {
@@ -32,9 +37,16 @@
 <body>
   <canvas class='audioView'></canvas>
   <div class="uiContainer">
+    <hr/>
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
     <button class="play skipSilence" onclick="window.AUDIOVIEW.play(true)">play(skip silence)</button>
     <button class="stop" onclick="window.AUDIOVIEW.stop()">stop</button>
+    <div>
+      <input type="checkbox" class="ticker" id="ticker" name="ticker" checked>
+      <label for="ticker">ticker: bpm=</label>
+      <input type="number" class="bpm" id="bpm" name="bpm"></input>
+    </div>
+    <hr/>
   </div>
   <div class="log">loading...</div>
 </body>
