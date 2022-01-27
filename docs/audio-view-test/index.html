@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <style>
+    body.ready canvas.audioView {
+      display: block;
+      margin: auto;
+      width: 95vw;
+      height: 60vh;
+      border: solid gray 1px;
+    }
+
+    body.ready div.uiContainer {
+      display: block;
+    }
+
+    canvas.audioView {
+      width: 0;
+      height: 0;
+    }
+
+    div.uiContainer {
+      display: none;
+      line-height: 2.5rem;
+    }
+
+    div.uiContainer button,
+    div.uiContainer div.tickerContainer * {
+      font-family: sans-serif;
+      font-size: 1em;
+      padding: 5px;
+    }
+
+    div.uiContainer input.bpm {
+      width: 7ch;
+    }
+
+    div.log {
+      white-space: pre;
+    }
+  </style>
+  <script src="main.js"></script>
+</head>
+
+<body>
+  <canvas class='audioView'></canvas>
+  <div class="uiContainer">
+    <hr />
+    <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
+    <button class="play skipSilence" onclick="window.AUDIOVIEW.play(true)">play(skip silence)</button>
+    <button class="stop" onclick="window.AUDIOVIEW.stop()">stop</button>
+    <div class="tickerContainer">
+      <input type="checkbox" class="ticker" id="ticker" name="ticker" checked>
+      <label for="ticker">ticker: bpm=</label>
+      <input type="number" class="bpm" id="bpm" name="bpm" min="1"></input>
+    </div>
+    <hr />
+  </div>
+  <div class="log">loading...</div>
+</body>
+
+</html>
