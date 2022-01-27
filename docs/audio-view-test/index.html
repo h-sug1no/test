@@ -4,11 +4,24 @@
 
 <head>
   <style>
-    canvas.audioView {
+    body.ready canvas.audioView {
       width: 80vw;
       height: 80vh;
       border: solid gray 1px;
     }
+    body.ready div.uiContainer {
+      display: block;
+    }
+
+    canvas.audioView {
+      width: 0;
+      height: 0;
+    }
+
+    div.uiContainer {
+      display: none;
+    }
+
     div.log {
       white-space: pre;
     }

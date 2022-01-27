@@ -8,6 +8,7 @@
   let logElm;
   let silences = [];
   let activeSource;
+  let error;
 
   const ticker = {
     ticks: {},
@@ -100,10 +101,10 @@
         elmsMap[c].forEach((v) => {
           switch (c) {
             case "play":
-              v.disabled = !!activeSource;
+              v.disabled = !!activeSource || error;
               break;
             case "stop":
-              v.disabled = !activeSource;
+              v.disabled = !activeSource || error;
               break;
             default:
               break;
@@ -128,34 +129,45 @@
     }
 
     let dirty;
-    const { clientWidth, clientHeight } = c2dElm;
-    if (c2dElm.width !== clientWidth || c2dElm.height !== clientHeight) {
-      c2dElm.width = clientWidth;
-      c2dElm.height = clientHeight;
+    const tC2dElm = c2dElm || {};
+    const { clientWidth, clientHeight } = tC2dElm;
+    if (tC2dElm.width !== clientWidth || tC2dElm.height !== clientHeight) {
+      tC2dElm.width = clientWidth;
+      tC2dElm.height = clientHeight;
       dirty = true;
     }
 
     if (logElm) {
       const texts = [];
-      if (audioSrcUrl) {
-        texts.push(audioSrcUrl);
-        if (!buffer) {
-          texts.push("loading...");
+      if (error) {
+        if (audioSrcUrl) {
+          texts.push(error);
+          texts.push(`audio=${audioSrcUrl}`);
         }
-      }
-      if (dirty) {
-        texts.push("rendering...");
-      }
+        const url = new URL(location);
+        url.search = 'audio=audioFileUrl';
+        texts.push(`usage: ${url.toString()}[&bpm=number]`);
+      } else {
+        if (audioSrcUrl) {
+          texts.push(audioSrcUrl);
+          if (!buffer) {
+            texts.push("loading...");
+          }
+        }
+        if (dirty) {
+          texts.push("rendering...");
+        }
 
-      if (buffer) {
-        texts.push(
-          `audioBuffer: numberOfChannels=${buffer.numberOfChannels}, duration=${buffer.duration}`
-        );
-        for (let i = 0; i < buffer.numberOfChannels; i += 1) {
-          const data = buffer.getChannelData(i);
-          texts.push(`data[${i}]: length=${data.length}`);
+        if (buffer) {
+          texts.push(
+            `audioBuffer: numberOfChannels=${buffer.numberOfChannels}, duration=${buffer.duration}`
+          );
+          for (let i = 0; i < buffer.numberOfChannels; i += 1) {
+            const data = buffer.getChannelData(i);
+            texts.push(`data[${i}]: length=${data.length}`);
+          }
+          texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
         }
-        texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
       }
       logElm.textContent = texts.join("\n");
     }
@@ -177,7 +189,7 @@
       }
     }
 
-    if (dirty && c2d) {
+    if (dirty && c2d && buffer) {
       c2d.clearRect(0, 0, clientWidth, clientHeight);
       // c2d.globalCompositeOperation = 'xor';
       let dataLength = -Infinity;
@@ -230,12 +242,29 @@
   };
 
   fetch(audioSrcUrl)
-    .then((res) => res.arrayBuffer())
-    .then((data) => actx.decodeAudioData(data))
-    .then((buf) => {
-      buffer = buf;
-      render();
-      return buffer;
+    .then((res) => {
+      if (res.ok) {
+        return res
+          .arrayBuffer()
+          .then((data) =>
+            actx
+              .decodeAudioData(data)
+              .then((buf) => {
+                buffer = buf;
+                document.body.classList.add('ready');
+                return buffer;
+              })
+              .catch((e) => Promise.reject(e))
+          )
+          .catch((e) => Promise.reject(e));
+      } else {
+        return Promise.reject(
+          Error(`${res.status}: ${res.statusText}`)
+        );
+      }
+    })
+    .catch((e) => {
+      error = e.toString();
     });
 
   let source;
@@ -279,4 +308,7 @@
       ticker.stop();
     },
   };
+
+  render();
+
 })();
