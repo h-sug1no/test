@@ -129,6 +129,7 @@
               audioSrcUrl = `localfile:${file.name}`;
               forceRelayout = true;
               loadError = undefined;
+              error = undefined;
               window.AUDIOVIEW.stop();
             })
             .catch((e) => (loadError = `${file.name}: ${e.toString()}`));
