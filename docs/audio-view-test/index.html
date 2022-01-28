@@ -44,6 +44,11 @@
     div.audioDZContainer input {
       width: 100vw;
       height: 2em;
+      padding: 0.5em;
+    }
+
+    div.audioDZContainer div.loadError {
+      color: darkred;
     }
 
     div.audioDZContainer input.hover {
@@ -64,10 +69,6 @@
 
 <body>
   <canvas class='audioView'></canvas>
-  <div class="audioDZContainer">
-    <input type="file" title="click to open file selector or drop file here.">
-    </input>
-  </div>
   <div class="uiContainer">
     <hr />
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
@@ -80,6 +81,12 @@
     </div>
     <hr />
   </div>
+  <div class="audioDZContainer">
+    <input type="file" accept="audio/*" title="click to open file selector or drop file here.">
+    </input>
+    <div class='loadError'></div>
+  </div>
+  <hr />
   <div class="log">loading...</div>
 </body>
 

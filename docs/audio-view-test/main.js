@@ -1,14 +1,27 @@
 (() => {
   const sps = new URLSearchParams(location.search);
-  const audioSrcUrl = sps.get('audio');
+  let audioSrcUrl = sps.get('audio');
   const actx = new AudioContext();
   let buffer;
   let c2d;
   let c2dElm;
+  let loadErrorElm;
   let logElm;
   let silences = [];
   let activeSource;
   let error;
+  let loadError;
+
+  const decodeAudioData = (data) => {
+    return actx
+      .decodeAudioData(data)
+      .then((buf) => {
+        buffer = buf;
+        document.body.classList.add('ready');
+        return buffer;
+      })
+      .catch((e) => Promise.reject(e));
+  };
 
   const ticker = {
     ticks: {},
@@ -92,7 +105,8 @@
         const tglClazz = (v) => {
           elm.classList.toggle('hover', v);
         };
-        elm.ondragover = () => {
+        elm.ondragover = (e) => {
+          console.log(e);
           tglClazz(true);
         };
         elm.ondragend = () => {
@@ -104,6 +118,17 @@
         elm.ondrop = () => {
           tglClazz(false);
         };
+
+        elm.addEventListener('change', () => {
+          const file = elm.files[0];
+          file
+            .arrayBuffer()
+            .then((data) => decodeAudioData(data))
+            .then(() => {
+              audioSrcUrl = `localfile:${file.name}`;
+            })
+            .catch((e) => (loadError = `${file.name}: ${e.toString()}`));
+        });
       }
     },
   };
@@ -174,6 +199,10 @@
       logElm = document.querySelector('div.log');
     }
 
+    if (!loadErrorElm) {
+      loadErrorElm = document.querySelector('div.loadError');
+    }
+
     let dirty;
     const tC2dElm = c2dElm || {};
     const { clientWidth, clientHeight } = tC2dElm;
@@ -185,6 +214,9 @@
 
     if (logElm) {
       const texts = [];
+      if (loadError) {
+        loadErrorElm.textContent = loadError;
+      }
       if (error) {
         if (audioSrcUrl) {
           texts.push(error);
@@ -296,16 +328,7 @@
       if (res.ok) {
         return res
           .arrayBuffer()
-          .then((data) =>
-            actx
-              .decodeAudioData(data)
-              .then((buf) => {
-                buffer = buf;
-                document.body.classList.add('ready');
-                return buffer;
-              })
-              .catch((e) => Promise.reject(e)),
-          )
+          .then((data) => decodeAudioData(data))
           .catch((e) => Promise.reject(e));
       } else {
         return Promise.reject(Error(`${res.status}: ${res.statusText}`));
