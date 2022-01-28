@@ -1,14 +1,28 @@
 (() => {
   const sps = new URLSearchParams(location.search);
-  const audioSrcUrl = sps.get("audio");
+  let audioSrcUrl = sps.get('audio');
   const actx = new AudioContext();
   let buffer;
   let c2d;
   let c2dElm;
+  let loadErrorElm;
   let logElm;
   let silences = [];
   let activeSource;
   let error;
+  let loadError;
+  let forceRelayout = false;
+
+  const decodeAudioData = (data) => {
+    return actx
+      .decodeAudioData(data)
+      .then((buf) => {
+        buffer = buf;
+        document.body.classList.add('ready');
+        return buffer;
+      })
+      .catch((e) => Promise.reject(e));
+  };
 
   const ticker = {
     ticks: {},
@@ -62,11 +76,11 @@
       gainNode.gain.value = 1;
       gainNode.gain.exponentialRampToValueAtTime(
         adsr.a.v,
-        startSec + adsr.a.sec
+        startSec + adsr.a.sec,
       );
       gainNode.gain.exponentialRampToValueAtTime(
         adsr.d.v,
-        startSec + adsr.d.sec
+        startSec + adsr.d.sec,
       );
       gainNode.connect(actx.destination);
       osc.connect(gainNode);
@@ -79,10 +93,56 @@
     },
   };
 
+  const dropZone = {
+    elm: undefined,
+    render() {
+      if (this.elm) {
+        return;
+      }
+
+      this.elm = document.querySelector('div.audioDZContainer input');
+      const { elm } = this;
+      if (elm) {
+        const tglClazz = (v) => {
+          elm.classList.toggle('hover', v);
+        };
+        elm.ondragover = (e) => {
+          console.log(e);
+          tglClazz(true);
+        };
+        elm.ondragend = () => {
+          tglClazz(false);
+        };
+        elm.ondragleave = () => {
+          tglClazz(false);
+        };
+        elm.ondrop = () => {
+          tglClazz(false);
+        };
+
+        elm.addEventListener('change', () => {
+          const file = elm.files[0];
+          file
+            .arrayBuffer()
+            .then((data) => decodeAudioData(data))
+            .then(() => {
+              audioSrcUrl = `localfile:${file.name}`;
+              forceRelayout = true;
+              loadError = undefined;
+              error = undefined;
+              window.AUDIOVIEW.stop();
+            })
+            .catch((e) => (loadError = `${file.name}: ${e.toString()}`));
+        });
+      }
+    },
+  };
+
   const ui = {
     elmsMap: undefined,
     render() {
-      const cs = ["play", "stop"];
+      dropZone.render();
+      const cs = ['play', 'stop'];
       if (!this.elmsMap) {
         cs.forEach((c) => {
           const elms = document.querySelectorAll(`div.uiContainer button.${c}`);
@@ -92,12 +152,12 @@
           }
         });
         if (this.elmsMap) {
-          ["ticker", "bpm"].forEach((c) => {
+          ['ticker', 'bpm'].forEach((c) => {
             this.elmsMap[c] = document.querySelector(`div.uiContainer .${c}`);
           });
           const { bpm: bpmElm } = this.elmsMap;
           if (bpmElm) {
-            bpmElm.value = sps.get("bpm") || 120;
+            bpmElm.value = sps.get('bpm') || 120;
           }
         }
       }
@@ -109,10 +169,10 @@
       cs.forEach((c) => {
         elmsMap[c].forEach((v) => {
           switch (c) {
-            case "play":
+            case 'play':
               v.disabled = !!activeSource || error;
               break;
-            case "stop":
+            case 'stop':
               v.disabled = !activeSource || error;
               break;
             default:
@@ -129,22 +189,26 @@
   };
 
   const render = (timestamp = 0) => {
-    if (ui.enabled("ticker")) {
+    if (ui.enabled('ticker')) {
       ticker.render();
     }
     ui.render();
     if (!c2d) {
-      const elm = document.querySelector("canvas.audioView");
+      const elm = document.querySelector('canvas.audioView');
       if (elm) {
-        c2d = elm.getContext("2d");
+        c2d = elm.getContext('2d');
         c2dElm = elm;
       }
     }
     if (!logElm) {
-      logElm = document.querySelector("div.log");
+      logElm = document.querySelector('div.log');
     }
 
-    let dirty;
+    if (!loadErrorElm) {
+      loadErrorElm = document.querySelector('div.loadError');
+    }
+
+    let dirty = forceRelayout;
     const tC2dElm = c2dElm || {};
     const { clientWidth, clientHeight } = tC2dElm;
     if (tC2dElm.width !== clientWidth || tC2dElm.height !== clientHeight) {
@@ -155,28 +219,31 @@
 
     if (logElm) {
       const texts = [];
+      if (loadError) {
+        loadErrorElm.textContent = loadError;
+      }
       if (error) {
         if (audioSrcUrl) {
           texts.push(error);
           texts.push(`audio=${audioSrcUrl}`);
         }
         const url = new URL(location);
-        url.search = "audio=audioFileUrl";
+        url.search = 'audio=audioFileUrl';
         texts.push(`usage: ${url.toString()}[&bpm=number]`);
       } else {
         if (audioSrcUrl) {
           texts.push(audioSrcUrl);
           if (!buffer) {
-            texts.push("loading...");
+            texts.push('loading...');
           }
         }
         if (dirty) {
-          texts.push("rendering...");
+          texts.push('rendering...');
         }
 
         if (buffer) {
           texts.push(
-            `audioBuffer: numberOfChannels=${buffer.numberOfChannels}, duration=${buffer.duration}`
+            `audioBuffer: numberOfChannels=${buffer.numberOfChannels}, duration=${buffer.duration}`,
           );
           for (let i = 0; i < buffer.numberOfChannels; i += 1) {
             const data = buffer.getChannelData(i);
@@ -185,11 +252,13 @@
           texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
         }
       }
-      logElm.textContent = texts.join("\n");
+      logElm.textContent = texts.join('\n');
+      c2dElm.title = logElm.textContent;
     }
 
     const markerBoxHeight = 50;
     if (dirty && c2d && buffer) {
+      forceRelayout = false;
       c2d.clearRect(0, 0, clientWidth, clientHeight);
       // c2d.globalCompositeOperation = 'xor';
       let dataLength = -Infinity;
@@ -232,7 +301,7 @@
                 v,
                 sec: sampleSec * idx,
               };
-              c2d.fillStyle = "rgba(0,0,0,0.4)";
+              c2d.fillStyle = 'rgba(0,0,0,0.4)';
               c2d.fillRect(0, y - hRow * 0.5, x, hRow);
             }
           }
@@ -242,18 +311,18 @@
     if (c2d) {
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
       if (buffer && actx && activeSource) {
-        c2d.fillStyle = "black";
+        c2d.fillStyle = 'black';
         const x =
           clientWidth *
           ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
             buffer.duration);
-        c2d.textAlign = x / clientWidth > 0.5 ? "end" : "start";
+        c2d.textAlign = x / clientWidth > 0.5 ? 'end' : 'start';
         c2d.fillText(
           `${(actx.currentTime - activeSource.startTime).toFixed(
-            3
+            3,
           )} / ${buffer.duration.toFixed(3)}`,
           x,
-          15
+          15,
         );
         c2d.fillRect(x, 20, 1, 30);
       }
@@ -266,16 +335,7 @@
       if (res.ok) {
         return res
           .arrayBuffer()
-          .then((data) =>
-            actx
-              .decodeAudioData(data)
-              .then((buf) => {
-                buffer = buf;
-                document.body.classList.add("ready");
-                return buffer;
-              })
-              .catch((e) => Promise.reject(e))
-          )
+          .then((data) => decodeAudioData(data))
           .catch((e) => Promise.reject(e));
       } else {
         return Promise.reject(Error(`${res.status}: ${res.statusText}`));
@@ -317,7 +377,7 @@
       };
 
       source.start(activeSource.startTime, offset);
-      if (ui.enabled("ticker")) {
+      if (ui.enabled('ticker')) {
         ticker.start(activeSource.startTime, ui.elmsMap.bpm);
       }
     },

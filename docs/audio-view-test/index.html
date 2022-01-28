@@ -40,6 +40,29 @@
     div.log {
       white-space: pre;
     }
+
+    div.audioDZContainer input {
+      width: 100vw;
+      height: 2em;
+      padding: 0.5em;
+    }
+
+    div.audioDZContainer div.loadError {
+      color: darkred;
+    }
+
+    div.audioDZContainer input.hover {
+      background-color: lightgrey;
+      height: 100px;
+    }
+
+    div.audioDZContainer input.hover:after {
+      content: "Drop file here";
+      font-size: 1.5em;
+      margin-top: 0.5em;
+      display: block;
+      text-align: center;
+    }
   </style>
   <script src="main.js"></script>
 </head>
@@ -58,7 +81,16 @@
     </div>
     <hr />
   </div>
+  <div class="audioDZContainer">
+    <input type="file" accept="audio/*" title="click to open file selector or drop file here.">
+    </input>
+    <div class='loadError'></div>
+  </div>
+  <hr />
   <div class="log">loading...</div>
+  <hr />
+  github: <a
+    href="https://github.com/h-sug1no/test/tree/main/docs/audio-view-test">https://github.com/h-sug1no/test/tree/main/docs/audio-view-test</a>
 </body>
 
 </html>
