@@ -11,6 +11,7 @@
   let activeSource;
   let error;
   let loadError;
+  let forceRelayout = false;
 
   const decodeAudioData = (data) => {
     return actx
@@ -126,6 +127,8 @@
             .then((data) => decodeAudioData(data))
             .then(() => {
               audioSrcUrl = `localfile:${file.name}`;
+              forceRelayout = true;
+              loadError = undefined;
             })
             .catch((e) => (loadError = `${file.name}: ${e.toString()}`));
         });
@@ -203,7 +206,7 @@
       loadErrorElm = document.querySelector('div.loadError');
     }
 
-    let dirty;
+    let dirty = forceRelayout;
     const tC2dElm = c2dElm || {};
     const { clientWidth, clientHeight } = tC2dElm;
     if (tC2dElm.width !== clientWidth || tC2dElm.height !== clientHeight) {
@@ -248,10 +251,12 @@
         }
       }
       logElm.textContent = texts.join('\n');
+      c2dElm.title = logElm.textContent;
     }
 
     const markerBoxHeight = 50;
     if (dirty && c2d && buffer) {
+      forceRelayout = false;
       c2d.clearRect(0, 0, clientWidth, clientHeight);
       // c2d.globalCompositeOperation = 'xor';
       let dataLength = -Infinity;
