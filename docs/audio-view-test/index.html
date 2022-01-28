@@ -40,12 +40,34 @@
     div.log {
       white-space: pre;
     }
+
+    div.audioDZContainer input {
+      width: 100vw;
+      height: 2em;
+    }
+
+    div.audioDZContainer input.hover {
+      background-color: lightgrey;
+      height: 100px;
+    }
+
+    div.audioDZContainer input.hover:after {
+      content: "Drop file here";
+      font-size: 1.5em;
+      margin-top: 0.5em;
+      display: block;
+      text-align: center;
+    }
   </style>
   <script src="main.js"></script>
 </head>
 
 <body>
   <canvas class='audioView'></canvas>
+  <div class="audioDZContainer">
+    <input type="file" title="click to open file selector or drop file here.">
+    </input>
+  </div>
   <div class="uiContainer">
     <hr />
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
