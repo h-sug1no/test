@@ -1,27 +1,60 @@
 (() => {
+  var jsmediatags = window.jsmediatags;
+
   const sps = new URLSearchParams(location.search);
   let audioSrcUrl = sps.get('audio');
   const actx = new AudioContext();
   let buffer;
+  let audioTags;
   let c2d;
   let c2dElm;
   let loadErrorElm;
   let logElm;
+  let picturesElm;
   let silences = [];
   let activeSource;
   let error;
   let loadError;
   let forceRelayout = false;
 
+  const fromPictureTagData = (picture = {}) => {
+    const { data, format } = picture;
+    if (!data) {
+      return undefined;
+    }
+    let base64String = '';
+    for (let i = 0; i < data.length; i += 1) {
+      base64String += String.fromCharCode(data[i]);
+    }
+    const ret = document.createElement('img');
+    ret.src = `data:${format};base64,${window.btoa(base64String)}`;
+    return ret;
+  };
+
   const decodeAudioData = (data) => {
-    return actx
-      .decodeAudioData(data)
-      .then((buf) => {
-        buffer = buf;
-        document.body.classList.add('ready');
-        return buffer;
-      })
-      .catch((e) => Promise.reject(e));
+    const p = new Promise((resolve, reject) => {
+      audioTags = undefined;
+      jsmediatags.read(new Blob([data], { type: 'application/octet-binary' }), {
+        onSuccess: function (tag) {
+          audioTags = tag.tags;
+          resolve(audioTags);
+        },
+        onError: function (error) {
+          // console.log(error);
+          resolve(error);
+        },
+      });
+    });
+    return p.then(() => {
+      return actx
+        .decodeAudioData(data)
+        .then((buf) => {
+          buffer = buf;
+          document.body.classList.add('ready');
+          return buffer;
+        })
+        .catch((e) => Promise.reject(e));
+    });
   };
 
   const ticker = {
@@ -204,6 +237,13 @@
       logElm = document.querySelector('div.log');
     }
 
+    if (!picturesElm) {
+      picturesElm = document.querySelector('div.pictures');
+    }
+    if (picturesElm) {
+      picturesElm.textContent = '';
+    }
+
     if (!loadErrorElm) {
       loadErrorElm = document.querySelector('div.loadError');
     }
@@ -250,6 +290,27 @@
             texts.push(`data[${i}]: length=${data.length}`);
           }
           texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
+        }
+        if (audioTags) {
+          texts.push(
+            JSON.stringify(
+              audioTags,
+              (k, v) => {
+                if (k === 'data' && v && Array.isArray(v)) {
+                  return '[...]';
+                }
+                return v;
+              },
+              2,
+            ),
+          );
+          const { picture } = audioTags;
+          if (picture) {
+            const imgElm = fromPictureTagData(picture);
+            if (imgElm) {
+              picturesElm.appendChild(imgElm);
+            }
+          }
         }
       }
       logElm.textContent = texts.join('\n');
