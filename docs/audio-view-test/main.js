@@ -236,6 +236,19 @@
     },
   };
 
+  const gridCtx = (gridWidth) => {
+    let prevX = undefined;
+    return {
+      fillRect(x, y, w, h) {
+        const shouldRender = prevX === undefined || x - prevX >= gridWidth;
+        if (shouldRender) {
+          c2d.fillRect(x, y, w, h);
+          prevX = x;
+        }
+      },
+    };
+  };
+
   const render = (timestamp = 0) => {
     if (ui.enabled('ticker')) {
       ticker.render();
@@ -363,11 +376,12 @@
         c2d.fillRect(0, y, clientWidth, 1);
         const data = buffer.getChannelData(i);
 
+        const gctx = gridCtx(1);
         data.forEach((v, idx) => {
           const x = (clientWidth / data.length) * idx;
           if (!(idx % 100)) {
             c2d.fillStyle = `hsl(${(360 / 10) * i}, 80%, 60%)`;
-            c2d.fillRect(x, y, 1, v * hRow);
+            gctx.fillRect(x, y, 1, v * hRow);
           }
           if (Math.abs(v) > 1) {
             console.log(idx, v);
@@ -398,19 +412,6 @@
     }
     if (c2d) {
       if (bpmInfo.tickBpm !== ui.elmsMap.bpm.value && buffer) {
-        const gridCtx = (gridWidth) => {
-          let prevX = undefined;
-          return {
-            fillRect(x, y, w, h) {
-              const shouldRender = prevX === undefined || x - prevX > gridWidth;
-              if (shouldRender) {
-                c2d.fillRect(x, y, w, h);
-                prevX = x;
-              }
-            },
-          };
-        };
-
         c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
         if (bpmInfo.musicTempo) {
           const { beats = [] } = bpmInfo.musicTempo;
