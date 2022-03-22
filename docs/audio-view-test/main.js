@@ -264,9 +264,7 @@
 
     if (logElm) {
       const texts = [];
-      if (loadError) {
-        loadErrorElm.textContent = loadError;
-      }
+      loadErrorElm.textContent = loadError || '';
       if (error) {
         if (audioSrcUrl) {
           texts.push(error);
