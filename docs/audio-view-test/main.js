@@ -6,6 +6,11 @@
   const actx = new AudioContext();
   let buffer;
   let audioTags;
+  let bpmInfo = {
+    audioSrcUrl,
+    musicTempo: undefined,
+    bpm: sps.get('bpm'),
+  };
   let c2d;
   let c2dElm;
   let loadErrorElm;
@@ -190,7 +195,7 @@
           });
           const { bpm: bpmElm } = this.elmsMap;
           if (bpmElm) {
-            bpmElm.value = sps.get('bpm') || 120;
+            bpmElm.value = bpmInfo.bpm || 120;
           }
         }
       }
@@ -287,6 +292,17 @@
           );
           for (let i = 0; i < buffer.numberOfChannels; i += 1) {
             const data = buffer.getChannelData(i);
+            if (bpmInfo.audioSrcUrl !== audioSrcUrl || !bpmInfo.bpm) {
+              var mt = new MusicTempo(data);
+              /*
+              console.log(mt.tempo);
+              console.log(mt.beats);
+              */
+              bpmInfo.musicTempo = mt;
+              bpmInfo.audioSrcUrl = audioSrcUrl;
+              bpmInfo.bpm = Math.round(mt.tempo || 120);
+              ui.elmsMap.bpm.value = bpmInfo.bpm;
+            }
             texts.push(`data[${i}]: length=${data.length}`);
           }
           texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
