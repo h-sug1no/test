@@ -168,6 +168,7 @@
         };
 
         elm.addEventListener('change', () => {
+          document.body.classList.remove('ready');
           const file = elm.files[0];
           file
             .arrayBuffer()
