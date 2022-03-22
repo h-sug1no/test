@@ -22,6 +22,15 @@
   let loadError;
   let forceRelayout = false;
 
+  const getSilenceEnd = () => {
+    let offset = Infinity;
+    silences.forEach((s) => {
+      if (s.end) {
+        offset = Math.min(offset, s.end.sec);
+      }
+    });
+    return offset === Infinity ? 0 : offset;
+  };
   const fromPictureTagData = (picture = {}) => {
     const { data, format } = picture;
     if (!data) {
@@ -332,6 +341,8 @@
     }
 
     const markerBoxHeight = 50;
+    const secW = buffer ? clientWidth / buffer.duration : 0;
+
     if (dirty && c2d && buffer) {
       forceRelayout = false;
       c2d.clearRect(0, 0, clientWidth, clientHeight);
@@ -382,17 +393,32 @@
           }
         });
       }
-      if (bpmInfo.musicTempo) {
-        const { beats = [] } = bpmInfo.musicTempo;
-        const secW = clientWidth / buffer.duration;
-        const hRow = 100;
-        beats.forEach((b) => {
-          c2d.fillStyle = 'rgba(0,0,255,0.4)';
-          c2d.fillRect(secW * b, 0, 1, hRow);
-        });
-      }
+      bpmInfo.tickBpm = 0;
     }
     if (c2d) {
+      if (bpmInfo.tickBpm !== ui.elmsMap.bpm.value && buffer) {
+        c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
+        if (bpmInfo.musicTempo) {
+          const { beats = [] } = bpmInfo.musicTempo;
+          const secW = clientWidth / buffer.duration;
+          const hRow = 100;
+          beats.forEach((b) => {
+            c2d.fillStyle = 'rgba(0,0,255,0.4)';
+            c2d.fillRect(secW * b, 0, 1, hRow);
+          });
+        }
+
+        bpmInfo.tickBpm = ui.elmsMap.bpm.value;
+        const silenceEndSec = getSilenceEnd();
+        let sec = silenceEndSec;
+        const beatSec = 60 / Number(bpmInfo.tickBpm);
+        while (sec < buffer.duration) {
+          c2d.fillStyle = 'rgba(0,255, 0, 0.4)';
+          c2d.fillRect(sec * secW - 1.5, 0, 3, 75);
+          sec += beatSec;
+        }
+      }
+
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
       if (buffer && actx && activeSource) {
         c2d.fillStyle = 'black';
@@ -443,12 +469,7 @@
       source.connect(actx.destination);
       let offset = 0;
       if (skipSilence) {
-        offset = Infinity;
-        silences.forEach((s) => {
-          if (s.end) {
-            offset = Math.min(offset, s.end.sec);
-          }
-        });
+        offset = getSilenceEnd();
       }
       source.onended = () => {
         activeSource = undefined;
