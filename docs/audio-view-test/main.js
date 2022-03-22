@@ -382,6 +382,15 @@
           }
         });
       }
+      if (bpmInfo.musicTempo) {
+        const { beats = [] } = bpmInfo.musicTempo;
+        const secW = clientWidth / buffer.duration;
+        const hRow = 100;
+        beats.forEach((b) => {
+          c2d.fillStyle = 'rgba(0,0,255,0.4)';
+          c2d.fillRect(secW * b, 0, 1, hRow);
+        });
+      }
     }
     if (c2d) {
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
