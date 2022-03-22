@@ -398,14 +398,28 @@
     }
     if (c2d) {
       if (bpmInfo.tickBpm !== ui.elmsMap.bpm.value && buffer) {
+        const gridCtx = (gridWidth) => {
+          let prevX = undefined;
+          return {
+            fillRect(x, y, w, h) {
+              const shouldRender = prevX === undefined || x - prevX > gridWidth;
+              if (shouldRender) {
+                c2d.fillRect(x, y, w, h);
+                prevX = x;
+              }
+            },
+          };
+        };
+
         c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
         if (bpmInfo.musicTempo) {
           const { beats = [] } = bpmInfo.musicTempo;
           const secW = clientWidth / buffer.duration;
           const hRow = 100;
+          const gctx = gridCtx(10);
           beats.forEach((b) => {
             c2d.fillStyle = 'rgba(0,0,255,0.4)';
-            c2d.fillRect(secW * b, 0, 1, hRow);
+            gctx.fillRect(secW * b, 0, 1, hRow);
           });
         }
 
@@ -413,9 +427,10 @@
         const silenceEndSec = getSilenceEnd();
         let sec = silenceEndSec;
         const beatSec = 60 / Number(bpmInfo.tickBpm);
+        const gctx = gridCtx(10);
         while (sec < buffer.duration) {
           c2d.fillStyle = 'rgba(0,255, 0, 0.4)';
-          c2d.fillRect(sec * secW - 1.5, 0, 3, 75);
+          gctx.fillRect(sec * secW, 0, 3, 75);
           sec += beatSec;
         }
       }
