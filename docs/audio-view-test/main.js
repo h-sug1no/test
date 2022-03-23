@@ -76,8 +76,17 @@
     startSec: 0,
     tickNo: 0,
     bpmRef: 120,
-    start(startSec, bpmRef = { value: 120 }) {
-      this.startSec = startSec;
+    start(startSec, bpmRef = { value: 120 }, currentSec) {
+      const aTick = 60 / Number(bpmRef.value);
+      let offsetInCurrentBeat = currentSec % aTick;
+      let offsetToNextBeat = 0;
+      let tick0No = 0;
+      if (offsetInCurrentBeat) {
+        offsetToNextBeat = aTick - offsetInCurrentBeat;
+        tick0No = Math.ceil(currentSec / aTick) % 4;
+      }
+      this.startSec = startSec + offsetToNextBeat;
+      this.tick0No = tick0No;
       this.bpmRef = bpmRef;
       this.tickNo = 0;
       this.render();
@@ -99,7 +108,7 @@
       n = 2 - n;
       const d = 60 / (Number(bpmRef.value) || 1);
       while (n > 0) {
-        const f = this.tickNo % 4 ? 600 : 800;
+        const f = (this.tick0No + this.tickNo) % 4 ? 600 : 800;
         this.pushTick(startSec + this.tickNo * d, f);
         n -= 1;
         this.tickNo += 1;
@@ -483,7 +492,7 @@
 
   let source;
   window.AUDIOVIEW = {
-    play(skipSilence, audioOffset01F = 0) {
+    play(skipSilence, startOffset01F = 0) {
       if (activeSource) {
         return;
       }
@@ -493,11 +502,12 @@
       source = actx.createBufferSource();
       source.buffer = buffer;
       source.connect(actx.destination);
-      let offset = 0;
-      let audioOffset = buffer.duration * audioOffset01F;
+      let silenceEnd = 0;
+      let startOffset = buffer.duration * startOffset01F;
+
       if (skipSilence) {
-        offset = getSilenceEnd();
-        audioOffset = Math.max(offset, audioOffset);
+        silenceEnd = getSilenceEnd();
+        startOffset = Math.max(silenceEnd, startOffset);
       }
 
       source.onended = () => {
@@ -506,13 +516,15 @@
       };
       activeSource = {
         source,
-        startTime: actx.currentTime + 0.001,
-        offset: audioOffset,
+        startTime: actx.currentTime + 0.1,
+        offset: startOffset,
+        silenceEnd: silenceEnd,
       };
 
-      source.start(activeSource.startTime, audioOffset);
+      source.start(activeSource.startTime, startOffset);
       if (ui.enabled('ticker')) {
-        ticker.start(activeSource.startTime, ui.elmsMap.bpm);
+        const currentSec = startOffset - silenceEnd;
+        ticker.start(activeSource.startTime, ui.elmsMap.bpm, currentSec);
       }
     },
     stop() {
