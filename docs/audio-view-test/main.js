@@ -259,6 +259,15 @@
       if (elm) {
         c2d = elm.getContext('2d');
         c2dElm = elm;
+
+        c2dElm.addEventListener('click', (e) => {
+          console.log(e);
+          const d01F = e.offsetX / c2dElm.clientWidth;
+          window.AUDIOVIEW.stop();
+          window.setTimeout(() => {
+            window.AUDIOVIEW.play(true, d01F);
+          }, 100);
+        });
       }
     }
     if (!logElm) {
@@ -474,7 +483,7 @@
 
   let source;
   window.AUDIOVIEW = {
-    play(skipSilence) {
+    play(skipSilence, audioOffset01F = 0) {
       if (activeSource) {
         return;
       }
@@ -485,9 +494,12 @@
       source.buffer = buffer;
       source.connect(actx.destination);
       let offset = 0;
+      let audioOffset = buffer.duration * audioOffset01F;
       if (skipSilence) {
         offset = getSilenceEnd();
+        audioOffset = Math.max(offset, audioOffset);
       }
+
       source.onended = () => {
         activeSource = undefined;
         ticker.stop();
@@ -495,10 +507,10 @@
       activeSource = {
         source,
         startTime: actx.currentTime + 0.001,
-        offset,
+        offset: audioOffset,
       };
 
-      source.start(activeSource.startTime, offset);
+      source.start(activeSource.startTime, audioOffset);
       if (ui.enabled('ticker')) {
         ticker.start(activeSource.startTime, ui.elmsMap.bpm);
       }
