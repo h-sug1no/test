@@ -65,6 +65,7 @@
         .then((buf) => {
           buffer = buf;
           document.body.classList.add('ready');
+          document.body.classList.remove('loading');
           return buffer;
         })
         .catch((e) => Promise.reject(e));
@@ -178,6 +179,7 @@
 
         elm.addEventListener('change', () => {
           document.body.classList.remove('ready');
+          document.body.classList.add('loading');
           const file = elm.files[0];
           file
             .arrayBuffer()
@@ -457,15 +459,12 @@
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
       if (buffer && actx && activeSource) {
         c2d.fillStyle = 'black';
-        const x =
-          clientWidth *
-          ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
-            buffer.duration);
+        const now =
+          activeSource.offset + (actx.currentTime - activeSource.startTime);
+        const x = clientWidth * (now / buffer.duration);
         c2d.textAlign = x / clientWidth > 0.5 ? 'end' : 'start';
         c2d.fillText(
-          `${(actx.currentTime - activeSource.startTime).toFixed(
-            3,
-          )} / ${buffer.duration.toFixed(3)}`,
+          `${now.toFixed(3)} / ${buffer.duration.toFixed(3)}`,
           x,
           15,
         );

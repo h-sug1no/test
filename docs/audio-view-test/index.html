@@ -12,6 +12,14 @@
       border: solid gray 1px;
     }
 
+    body.loading div.loadingContainer {
+      display: block;
+    }
+
+    div.loadingContainer {
+      display: none;
+    }
+
     body.ready div.uiContainer {
       display: block;
     }
@@ -75,6 +83,7 @@
 
 <body>
   <canvas class='audioView'></canvas>
+  <div class="loadingContainer">loading ...</div>
   <div class="uiContainer">
     <hr />
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
