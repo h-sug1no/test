@@ -1,27 +1,75 @@
 (() => {
+  var jsmediatags = window.jsmediatags;
+
   const sps = new URLSearchParams(location.search);
   let audioSrcUrl = sps.get('audio');
   const actx = new AudioContext();
   let buffer;
+  let audioTags;
+  let bpmInfo = {
+    audioSrcUrl,
+    musicTempo: undefined,
+    bpm: sps.get('bpm'),
+  };
   let c2d;
   let c2dElm;
   let loadErrorElm;
   let logElm;
+  let picturesElm;
   let silences = [];
   let activeSource;
   let error;
   let loadError;
   let forceRelayout = false;
 
+  const getSilenceEnd = () => {
+    let offset = Infinity;
+    silences.forEach((s) => {
+      if (s.end) {
+        offset = Math.min(offset, s.end.sec);
+      }
+    });
+    return offset === Infinity ? 0 : offset;
+  };
+  const fromPictureTagData = (picture = {}) => {
+    const { data, format } = picture;
+    if (!data) {
+      return undefined;
+    }
+    let base64String = '';
+    for (let i = 0; i < data.length; i += 1) {
+      base64String += String.fromCharCode(data[i]);
+    }
+    const ret = document.createElement('img');
+    ret.src = `data:${format};base64,${window.btoa(base64String)}`;
+    return ret;
+  };
+
   const decodeAudioData = (data) => {
-    return actx
-      .decodeAudioData(data)
-      .then((buf) => {
-        buffer = buf;
-        document.body.classList.add('ready');
-        return buffer;
-      })
-      .catch((e) => Promise.reject(e));
+    const p = new Promise((resolve, reject) => {
+      audioTags = undefined;
+      jsmediatags.read(new Blob([data], { type: 'application/octet-binary' }), {
+        onSuccess: function (tag) {
+          audioTags = tag.tags;
+          resolve(audioTags);
+        },
+        onError: function (error) {
+          // console.log(error);
+          resolve(error);
+        },
+      });
+    });
+    return p.then(() => {
+      return actx
+        .decodeAudioData(data)
+        .then((buf) => {
+          buffer = buf;
+          document.body.classList.add('ready');
+          document.body.classList.remove('loading');
+          return buffer;
+        })
+        .catch((e) => Promise.reject(e));
+    });
   };
 
   const ticker = {
@@ -29,8 +77,17 @@
     startSec: 0,
     tickNo: 0,
     bpmRef: 120,
-    start(startSec, bpmRef = { value: 120 }) {
-      this.startSec = startSec;
+    start(startSec, bpmRef = { value: 120 }, currentSec) {
+      const aTick = 60 / Number(bpmRef.value);
+      let offsetInCurrentBeat = currentSec % aTick;
+      let offsetToNextBeat = 0;
+      let tick0No = 0;
+      if (offsetInCurrentBeat) {
+        offsetToNextBeat = aTick - offsetInCurrentBeat;
+        tick0No = Math.ceil(currentSec / aTick) % 4;
+      }
+      this.startSec = startSec + offsetToNextBeat;
+      this.tick0No = tick0No;
       this.bpmRef = bpmRef;
       this.tickNo = 0;
       this.render();
@@ -52,7 +109,7 @@
       n = 2 - n;
       const d = 60 / (Number(bpmRef.value) || 1);
       while (n > 0) {
-        const f = this.tickNo % 4 ? 600 : 800;
+        const f = (this.tick0No + this.tickNo) % 4 ? 600 : 800;
         this.pushTick(startSec + this.tickNo * d, f);
         n -= 1;
         this.tickNo += 1;
@@ -121,6 +178,8 @@
         };
 
         elm.addEventListener('change', () => {
+          document.body.classList.remove('ready');
+          document.body.classList.add('loading');
           const file = elm.files[0];
           file
             .arrayBuffer()
@@ -157,7 +216,7 @@
           });
           const { bpm: bpmElm } = this.elmsMap;
           if (bpmElm) {
-            bpmElm.value = sps.get('bpm') || 120;
+            bpmElm.value = bpmInfo.bpm || 120;
           }
         }
       }
@@ -188,6 +247,19 @@
     },
   };
 
+  const gridCtx = (gridWidth) => {
+    let prevX = undefined;
+    return {
+      fillRect(x, y, w, h) {
+        const shouldRender = prevX === undefined || x - prevX >= gridWidth;
+        if (shouldRender) {
+          c2d.fillRect(x, y, w, h);
+          prevX = x;
+        }
+      },
+    };
+  };
+
   const render = (timestamp = 0) => {
     if (ui.enabled('ticker')) {
       ticker.render();
@@ -198,10 +270,26 @@
       if (elm) {
         c2d = elm.getContext('2d');
         c2dElm = elm;
+
+        c2dElm.addEventListener('click', (e) => {
+          console.log(e);
+          const d01F = e.offsetX / c2dElm.clientWidth;
+          window.AUDIOVIEW.stop();
+          window.setTimeout(() => {
+            window.AUDIOVIEW.play(true, d01F);
+          }, 100);
+        });
       }
     }
     if (!logElm) {
       logElm = document.querySelector('div.log');
+    }
+
+    if (!picturesElm) {
+      picturesElm = document.querySelector('div.pictures');
+    }
+    if (picturesElm) {
+      picturesElm.textContent = '';
     }
 
     if (!loadErrorElm) {
@@ -219,9 +307,7 @@
 
     if (logElm) {
       const texts = [];
-      if (loadError) {
-        loadErrorElm.textContent = loadError;
-      }
+      loadErrorElm.textContent = loadError || '';
       if (error) {
         if (audioSrcUrl) {
           texts.push(error);
@@ -247,9 +333,41 @@
           );
           for (let i = 0; i < buffer.numberOfChannels; i += 1) {
             const data = buffer.getChannelData(i);
+            if (bpmInfo.audioSrcUrl !== audioSrcUrl || !bpmInfo.bpm) {
+              var mt = new MusicTempo(data);
+              /*
+              console.log(mt.tempo);
+              console.log(mt.beats);
+              */
+              bpmInfo.musicTempo = mt;
+              bpmInfo.audioSrcUrl = audioSrcUrl;
+              bpmInfo.bpm = Math.round(mt.tempo || 120);
+              ui.elmsMap.bpm.value = bpmInfo.bpm;
+            }
             texts.push(`data[${i}]: length=${data.length}`);
           }
           texts.push(`silences: ${JSON.stringify(silences, null, 2)}`);
+        }
+        if (audioTags) {
+          texts.push(
+            JSON.stringify(
+              audioTags,
+              (k, v) => {
+                if (k === 'data' && v && Array.isArray(v)) {
+                  return '[...]';
+                }
+                return v;
+              },
+              2,
+            ),
+          );
+          const { picture } = audioTags;
+          if (picture) {
+            const imgElm = fromPictureTagData(picture);
+            if (imgElm) {
+              picturesElm.appendChild(imgElm);
+            }
+          }
         }
       }
       logElm.textContent = texts.join('\n');
@@ -257,6 +375,8 @@
     }
 
     const markerBoxHeight = 50;
+    const secW = buffer ? clientWidth / buffer.duration : 0;
+
     if (dirty && c2d && buffer) {
       forceRelayout = false;
       c2d.clearRect(0, 0, clientWidth, clientHeight);
@@ -276,11 +396,12 @@
         c2d.fillRect(0, y, clientWidth, 1);
         const data = buffer.getChannelData(i);
 
+        const gctx = gridCtx(1);
         data.forEach((v, idx) => {
           const x = (clientWidth / data.length) * idx;
           if (!(idx % 100)) {
             c2d.fillStyle = `hsl(${(360 / 10) * i}, 80%, 60%)`;
-            c2d.fillRect(x, y, 1, v * hRow);
+            gctx.fillRect(x, y, 1, v * hRow);
           }
           if (Math.abs(v) > 1) {
             console.log(idx, v);
@@ -307,20 +428,46 @@
           }
         });
       }
+      bpmInfo.tickBpm = 0;
     }
     if (c2d) {
+      if (bpmInfo.tickBpm !== ui.elmsMap.bpm.value && buffer) {
+        c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
+        if (bpmInfo.musicTempo) {
+          const { beats = [] } = bpmInfo.musicTempo;
+          const hRow = 100;
+          const gctx = gridCtx(10);
+          beats.forEach((b) => {
+            c2d.fillStyle = 'rgba(0,0,255,0.4)';
+            gctx.fillRect(secW * b, 0, 1, hRow);
+          });
+        }
+
+        bpmInfo.tickBpm = ui.elmsMap.bpm.value;
+        const silenceEndSec = getSilenceEnd();
+        let sec = silenceEndSec;
+        const beatSec = 60 / Number(bpmInfo.tickBpm);
+        const gctx = gridCtx(10);
+        while (sec < buffer.duration) {
+          c2d.fillStyle = 'rgba(0,255, 0, 0.4)';
+          gctx.fillRect(sec * secW, 0, 3, 75);
+          sec += beatSec;
+        }
+      }
+
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
       if (buffer && actx && activeSource) {
         c2d.fillStyle = 'black';
-        const x =
-          clientWidth *
-          ((activeSource.offset + (actx.currentTime - activeSource.startTime)) /
-            buffer.duration);
+        // FIXME: how to solve audio delay on vmware (host:w10, guest: ubuntu)
+        const platformDelay = 0;
+        const now =
+          activeSource.offset +
+          (actx.currentTime - activeSource.startTime) -
+          platformDelay;
+        const x = clientWidth * (now / buffer.duration);
         c2d.textAlign = x / clientWidth > 0.5 ? 'end' : 'start';
         c2d.fillText(
-          `${(actx.currentTime - activeSource.startTime).toFixed(
-            3,
-          )} / ${buffer.duration.toFixed(3)}`,
+          `${now.toFixed(3)} / ${buffer.duration.toFixed(3)}`,
           x,
           15,
         );
@@ -347,7 +494,7 @@
 
   let source;
   window.AUDIOVIEW = {
-    play(skipSilence) {
+    play(skipSilence, startOffset01F = 0) {
       if (activeSource) {
         return;
       }
@@ -357,28 +504,29 @@
       source = actx.createBufferSource();
       source.buffer = buffer;
       source.connect(actx.destination);
-      let offset = 0;
+      let silenceEnd = 0;
+      let startOffset = buffer.duration * startOffset01F;
+
       if (skipSilence) {
-        offset = Infinity;
-        silences.forEach((s) => {
-          if (s.end) {
-            offset = Math.min(offset, s.end.sec);
-          }
-        });
+        silenceEnd = getSilenceEnd();
+        startOffset = Math.max(silenceEnd, startOffset);
       }
+
       source.onended = () => {
         activeSource = undefined;
         ticker.stop();
       };
       activeSource = {
         source,
-        startTime: actx.currentTime + 0.001,
-        offset,
+        startTime: actx.currentTime + 0.1,
+        offset: startOffset,
+        silenceEnd: silenceEnd,
       };
 
-      source.start(activeSource.startTime, offset);
+      source.start(activeSource.startTime, startOffset);
       if (ui.enabled('ticker')) {
-        ticker.start(activeSource.startTime, ui.elmsMap.bpm);
+        const currentSec = startOffset - silenceEnd;
+        ticker.start(activeSource.startTime, ui.elmsMap.bpm, currentSec);
       }
     },
     stop() {

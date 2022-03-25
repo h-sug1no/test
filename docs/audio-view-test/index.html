@@ -12,6 +12,14 @@
       border: solid gray 1px;
     }
 
+    body.loading div.loadingContainer {
+      display: block;
+    }
+
+    div.loadingContainer {
+      display: none;
+    }
+
     body.ready div.uiContainer {
       display: block;
     }
@@ -35,6 +43,10 @@
 
     div.uiContainer input.bpm {
       width: 7ch;
+    }
+
+    div.pictures img {
+      width: 100px;
     }
 
     div.log {
@@ -64,11 +76,14 @@
       text-align: center;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/music-tempo@1.0.3/dist/browser/music-tempo.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
   <script src="main.js"></script>
 </head>
 
 <body>
   <canvas class='audioView'></canvas>
+  <div class="loadingContainer">loading ...</div>
   <div class="uiContainer">
     <hr />
     <button class="play" onclick="window.AUDIOVIEW.play()">play</button>
@@ -87,6 +102,7 @@
     <div class='loadError'></div>
   </div>
   <hr />
+  <div class="pictures"></div>
   <div class="log">loading...</div>
   <hr />
   github: <a
