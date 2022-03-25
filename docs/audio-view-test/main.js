@@ -435,7 +435,6 @@
         c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
         if (bpmInfo.musicTempo) {
           const { beats = [] } = bpmInfo.musicTempo;
-          const secW = clientWidth / buffer.duration;
           const hRow = 100;
           const gctx = gridCtx(10);
           beats.forEach((b) => {
@@ -459,8 +458,12 @@
       c2d.clearRect(0, 0, clientWidth, markerBoxHeight);
       if (buffer && actx && activeSource) {
         c2d.fillStyle = 'black';
+        // FIXME: how to solve audio delay on vmware (host:w10, guest: ubuntu)
+        const platformDelay = 0;
         const now =
-          activeSource.offset + (actx.currentTime - activeSource.startTime);
+          activeSource.offset +
+          (actx.currentTime - activeSource.startTime) -
+          platformDelay;
         const x = clientWidth * (now / buffer.duration);
         c2d.textAlign = x / clientWidth > 0.5 ? 'end' : 'start';
         c2d.fillText(
