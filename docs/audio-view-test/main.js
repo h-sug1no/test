@@ -269,6 +269,20 @@
       if (document.querySelector('#waveform')) {
         wavesurfer = WaveSurfer.create({
           container: '#waveform',
+          plugins: [
+            /*
+            WaveSurfer.cursor.create({
+              showTime: true,
+              opacity: 1,
+              customShowTimeStyle: {
+                'background-color': '#000',
+                color: '#fff',
+                padding: '2px',
+                'font-size': '10px',
+              },
+            }),
+          */
+          ],
           // waveColor: 'violet',
           // progressColor: 'purple',
         });
@@ -490,7 +504,8 @@
           activeSource.offset +
           (actx.currentTime - activeSource.startTime) -
           platformDelay;
-        const x = clientWidth * (now / buffer.duration);
+        const now01F = now / buffer.duration;
+        const x = clientWidth * now01F;
         c2d.textAlign = x / clientWidth > 0.5 ? 'end' : 'start';
         c2d.fillText(
           `${now.toFixed(3)} / ${buffer.duration.toFixed(3)}`,
@@ -498,6 +513,10 @@
           15,
         );
         c2d.fillRect(x, 20, 1, 30);
+
+        if (wavesurfer) {
+          wavesurfer.seekAndCenter(now01F);
+        }
       }
     }
     requestAnimationFrame(render);
