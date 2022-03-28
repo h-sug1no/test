@@ -17,6 +17,7 @@
   let logElm;
   let picturesElm;
   let silences = [];
+  let levelInfo = {};
   let activeSource;
   let error;
   let loadError;
@@ -132,7 +133,7 @@
       const gainNode = actx.createGain();
       gainNode.gain.value = 1;
       gainNode.gain.exponentialRampToValueAtTime(
-        adsr.a.v,
+        adsr.a.v * levelInfo.max,
         startSec + adsr.a.sec,
       );
       gainNode.gain.exponentialRampToValueAtTime(
@@ -388,6 +389,12 @@
       }
       const sampleSec = buffer.duration / dataLength;
       silences = [];
+      levelInfo = {
+        max: 0,
+        total: 0,
+        count: 0,
+        average: 0,
+      };
       const contentBoxHeight = clientHeight - markerBoxHeight;
       for (let i = 0; i < buffer.numberOfChannels; i += 1) {
         const row = contentBoxHeight * (1 / buffer.numberOfChannels);
@@ -403,10 +410,12 @@
             c2d.fillStyle = `hsl(${(360 / 10) * i}, 80%, 60%)`;
             gctx.fillRect(x, y, 1, v * hRow);
           }
-          if (Math.abs(v) > 1) {
+          const absV = Math.abs(v);
+          levelInfo.max = Math.max(absV, levelInfo.max);
+          if (absV > 1) {
             console.log(idx, v);
           }
-          if (Math.abs(v) <= 0.01) {
+          if (absV <= 0.01) {
             if (!silences[i] || !silences[i].done) {
               silences[i] = {
                 sec: sampleSec * idx,
@@ -414,20 +423,25 @@
                 v,
               };
             }
-          } else if (silences[i]) {
-            if (!silences[i].done) {
-              silences[i].done = true;
-              silences[i].end = {
-                idx,
-                v,
-                sec: sampleSec * idx,
-              };
-              c2d.fillStyle = 'rgba(0,0,0,0.4)';
-              c2d.fillRect(0, y - hRow * 0.5, x, hRow);
+          } else {
+            levelInfo.count += 1;
+            levelInfo.total += v;
+            if (silences[i]) {
+              if (!silences[i].done) {
+                silences[i].done = true;
+                silences[i].end = {
+                  idx,
+                  v,
+                  sec: sampleSec * idx,
+                };
+                c2d.fillStyle = 'rgba(0,0,0,0.4)';
+                c2d.fillRect(0, y - hRow * 0.5, x, hRow);
+              }
             }
           }
         });
       }
+      levelInfo.average = levelInfo.total / levelInfo.count;
       bpmInfo.tickBpm = 0;
     }
     if (c2d) {
