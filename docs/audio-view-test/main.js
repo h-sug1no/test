@@ -22,6 +22,7 @@
   let error;
   let loadError;
   let forceRelayout = false;
+  let wavesurfer;
 
   const getSilenceEnd = () => {
     let offset = Infinity;
@@ -49,7 +50,9 @@
   const decodeAudioData = (data) => {
     const p = new Promise((resolve, reject) => {
       audioTags = undefined;
-      jsmediatags.read(new Blob([data], { type: 'application/octet-binary' }), {
+      const audioBlob = new Blob([data], { type: 'application/octet-binary' });
+      wavesurfer.loadBlob(audioBlob);
+      jsmediatags.read(audioBlob, {
         onSuccess: function (tag) {
           audioTags = tag.tags;
           resolve(audioTags);
@@ -262,6 +265,15 @@
   };
 
   const render = (timestamp = 0) => {
+    if (!wavesurfer) {
+      if (document.querySelector('#waveform')) {
+        wavesurfer = WaveSurfer.create({
+          container: '#waveform',
+          // waveColor: 'violet',
+          // progressColor: 'purple',
+        });
+      }
+    }
     if (ui.enabled('ticker')) {
       ticker.render();
     }
