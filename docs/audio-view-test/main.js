@@ -24,13 +24,6 @@
   let loadError;
   let forceRelayout = false;
   let wavesurfer;
-  let wsMarkerInfo = {
-    audioBlob: undefined,
-    markers: {
-      ticks: [],
-      beats: [],
-    },
-  };
 
   const getSilenceEnd = () => {
     let offset = Infinity;
@@ -278,10 +271,10 @@
         wavesurfer = WaveSurfer.create({
           container: '#waveform',
           plugins: [
+            /*
             WaveSurfer.markers.create({
               // plugin options ...
             }),
-            /*
             WaveSurfer.cursor.create({
               showTime: true,
               opacity: 1,
@@ -483,18 +476,6 @@
     }
     if (c2d) {
       if (bpmInfo.tickBpm !== ui.elmsMap.bpm.value && buffer) {
-        let wsMarkerBeats;
-        let wsMarkerTicks;
-
-        if (audioBlob !== wsMarkerInfo.audioBlob) {
-          wavesurfer.clearMarkers();
-          wsMarkerInfo.markers.beats = [];
-          wsMarkerInfo.markers.ticks = [];
-          wsMarkerBeats = wsMarkerInfo.markers.beats;
-          wsMarkerTicks = wsMarkerInfo.markers.ticks;
-          wsMarkerInfo.audioBlob = audioBlob;
-        }
-
         c2d.clearRect(0, markerBoxHeight, clientWidth, 50);
         if (bpmInfo.musicTempo) {
           const { beats = [] } = bpmInfo.musicTempo;
@@ -503,9 +484,6 @@
           beats.forEach((b) => {
             c2d.fillStyle = 'rgba(0,0,255,0.4)';
             gctx.fillRect(secW * b, 0, 1, hRow);
-            if (wsMarkerBeats) {
-              wsMarkerBeats.push(wavesurfer.addMarker({ time: b }));
-            }
           });
         }
 
@@ -517,15 +495,6 @@
         while (sec < buffer.duration) {
           c2d.fillStyle = 'rgba(0,255, 0, 0.4)';
           gctx.fillRect(sec * secW, 0, 3, 75);
-          if (wsMarkerTicks) {
-            wsMarkerBeats.push(
-              wavesurfer.addMarker({
-                time: sec,
-                position: 'top',
-                color: 'rgba(0,255, 0, 0.4)',
-              }),
-            );
-          }
           sec += beatSec;
         }
       }
