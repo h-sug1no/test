@@ -1,3 +1,5 @@
+import {TimeStretcher} from './stretch.js';
+
 (()=>{
 
   const sps = new URLSearchParams(location.search);

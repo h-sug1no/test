@@ -5,10 +5,11 @@
   STFT, Phase Vocoder implementations.
 */
 
-define(['dsp', 'tools'],
-function(dsp, tools) {
+import * as dsp from './support/js/dsp.js';
 
-var TimeStretcher = (function() {
+console.log('foo');
+
+const TimeStretcher = (function() {
   var DEBUG = true;
   var DSP = dsp.DSP;
   var FFT = dsp.FFT;
@@ -183,7 +184,7 @@ var TimeStretcher = (function() {
   }
 
   return TimeStretcher;
-})()
+})();
 
-return {TimeStretcher: TimeStretcher}
-});
+export {TimeStretcher};
+
