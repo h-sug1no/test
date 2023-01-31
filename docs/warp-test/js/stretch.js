@@ -9,6 +9,36 @@ import * as dsp from './support/js/dsp.js';
 
 console.log('foo');
 
+const tools =
+{
+  onProgress(details, message){
+    console.log(details, message);
+  },
+  merge(destination, source) {
+    for (var property in source)
+        destination[property] = source[property];
+    return destination;
+  },
+  interpolateArray(data, newData, fitCount) {
+    var springFactor = new Number((data.length - 1) / (fitCount - 1));
+    newData[0] = data[0]; // for new allocation
+    for ( var i = 1; i < fitCount - 1; i++) {
+      var tmp = i * springFactor;
+      var before = Math.floor(tmp);
+      var after = Math.ceil(tmp);
+      var atPoint = tmp - before;
+      newData[i] = data[before] + (data[after] - data[before]) * atPoint;
+
+      onProgress({current_stage: 1, total_stages: 0, current_window: i, total_windows: (fitCount - 1)},
+        "Interpolating: ");
+    }
+
+    onProgress({complete: true}, "Interpolating: ");
+    newData[fitCount - 1] = data[data.length - 1]; // for new allocation
+    return newData;
+  },
+};
+
 const TimeStretcher = (function() {
   var DEBUG = true;
   var DSP = dsp.DSP;
