@@ -14,9 +14,12 @@ import { TimeStretcher } from './stretch.js';
 
   const init = () => {
     const audioElm = document.querySelector('#player');
-    audioElm.src = sps.get('src');
+    const srcUrl = sps.get('src');
+    if (srcUrl) {
+      audioElm.src = sps.get('src');
+    }
     window.WTGLOBAL.audioElm = audioElm;
-    App.setupSample(audioElm.src);
+    App.setupSample(srcUrl);
   };
 
   const App = {
@@ -36,14 +39,27 @@ import { TimeStretcher } from './stretch.js';
     },
     async setupSample(url) {
       const { actx: ctx } = this;
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      this.buffer = await ctx.decodeAudioData(arrayBuffer);
       this.wavesurfer = WaveSurfer.create({
         container: document.querySelector('#wsContainer'),
       });
+      if (url) {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        this.buffer = await ctx.decodeAudioData(arrayBuffer);
+        this.loadThisBuffer();
+      }
 
       const me = this;
+      me.elms.srcFile = document.querySelector('#srcFile');
+      me.elms.srcFile.addEventListener('change', async (e) => {
+        var file = e.target.files[0];
+        var reader = new FileReader();
+        reader.onload = async (theFile) => {
+          this.buffer = await ctx.decodeAudioData(theFile.target.result);
+          this.loadThisBuffer();
+        };
+        reader.readAsArrayBuffer(file);
+      });
       document.querySelector('#togglePlay').addEventListener('click', (e) => {
         const { wavesurfer } = me;
         if (e.altKey) {
@@ -63,8 +79,6 @@ import { TimeStretcher } from './stretch.js';
         me.stretch();
         this.loadThisBuffer();
       });
-
-      this.loadThisBuffer();
     },
     stretch() {
       const buffer = this.buffer;
