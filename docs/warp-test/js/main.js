@@ -8,9 +8,9 @@ import { TimeStretcher } from './stretch.js';
   this.wavesurfer.loadDecodedBuffer(yourBuffer);
   */
 
-  const L = () => {
-    console.log(...(arguments || []));
-  };
+  function L() {
+    console.log(...arguments);
+  }
 
   const init = () => {
     const audioElm = document.querySelector('#player');
@@ -26,6 +26,10 @@ import { TimeStretcher } from './stretch.js';
     pitchShift: 0,
     stretchFactor: 1,
     wavesurfer: undefined,
+    elms: {
+      timeStretch: undefined,
+      pitchShift: undefined,
+    },
     loadThisBuffer() {
       this.wavesurfer.empty();
       this.wavesurfer.loadDecodedBuffer(this.playBuffer || this.buffer);
@@ -41,7 +45,7 @@ import { TimeStretcher } from './stretch.js';
 
       const me = this;
       document.querySelector('#togglePlay').addEventListener('click', (e) => {
-        const {wavesurfer} = me;
+        const { wavesurfer } = me;
         if (e.altKey) {
           wavesurfer.seekTo(0);
           wavesurfer.play();
@@ -50,13 +54,23 @@ import { TimeStretcher } from './stretch.js';
         }
       });
 
+      this.elms.timeStretch = document.querySelector('#timeStretch');
+      this.elms.pitchShift = document.querySelector('#pitchShift');
+
+      document.querySelector('#apply').addEventListener('click', (e) => {
+        me.stretchFactor = Number(this.elms.timeStretch.value);
+        me.pitchShift = Number(this.elms.pitchShift.value);
+        me.stretch();
+        this.loadThisBuffer();
+      });
+
       this.loadThisBuffer();
     },
     stretch() {
       const buffer = this.buffer;
       if (!buffer) return;
 
-      let len = end_s - start_s;
+      let len = buffer.duration;
 
       if (len == 0) {
         this.playBuffer = null;

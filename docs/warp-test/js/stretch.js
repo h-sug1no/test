@@ -12,7 +12,7 @@ console.log('foo');
 const tools =
 {
   onProgress(details, message){
-    console.log(details, message);
+    // console.log(details, message);
   },
   merge(destination, source) {
     for (var property in source)
@@ -29,11 +29,11 @@ const tools =
       var atPoint = tmp - before;
       newData[i] = data[before] + (data[after] - data[before]) * atPoint;
 
-      onProgress({current_stage: 1, total_stages: 0, current_window: i, total_windows: (fitCount - 1)},
+      this.onProgress({current_stage: 1, total_stages: 0, current_window: i, total_windows: (fitCount - 1)},
         "Interpolating: ");
     }
 
-    onProgress({complete: true}, "Interpolating: ");
+    this.onProgress({complete: true}, "Interpolating: ");
     newData[fitCount - 1] = data[data.length - 1]; // for new allocation
     return newData;
   },
